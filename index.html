@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Distribución de clientes Dosmicos en Bogotá</title>
+  <title>Mapa de calor clientes Dosmicos en Bogotá</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     :root {
@@ -22,95 +22,43 @@
       background: var(--soft);
     }
     .layout {
-      display: grid;
-      grid-template-columns: 360px minmax(0, 1fr);
       width: 100vw;
       height: 100vh;
     }
-    aside {
-      padding: 18px;
-      background: var(--panel);
-      border-right: 1px solid var(--line);
-      overflow: auto;
-    }
-    h1 {
-      margin: 0 0 8px;
-      font-size: 22px;
-      line-height: 1.15;
-      letter-spacing: 0;
-    }
-    .meta, .privacy {
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.45;
-    }
-    .stats {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin: 18px 0;
-    }
-    .stat {
-      min-height: 76px;
-      border: 1px solid var(--line);
+    #map { width: 100%; height: 100%; }
+    .badge {
+      position: fixed;
+      left: 14px;
+      top: 14px;
+      z-index: 500;
+      width: min(320px, calc(100vw - 28px));
+      padding: 12px 14px;
+      border: 1px solid rgba(217, 222, 232, .9);
       border-radius: 8px;
-      padding: 10px;
-      background: #fff;
+      background: rgba(255, 255, 255, .92);
+      box-shadow: 0 8px 24px rgba(23, 32, 51, .12);
+      backdrop-filter: blur(8px);
     }
-    .stat strong {
+    .badge strong {
       display: block;
-      font-size: 24px;
-      line-height: 1;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
+      font-size: 15px;
+      line-height: 1.2;
     }
-    .stat span {
+    .badge span {
       display: block;
       color: var(--muted);
       font-size: 12px;
-      line-height: 1.25;
-    }
-    .privacy {
-      padding-top: 14px;
-      border-top: 1px solid var(--line);
-    }
-    #map { width: 100%; height: 100%; }
-    .popup {
-      min-width: 190px;
-      font-size: 13px;
       line-height: 1.35;
-    }
-    .popup b { color: var(--ink); }
-    @media (max-width: 820px) {
-      .layout {
-        grid-template-columns: 1fr;
-        grid-template-rows: auto minmax(0, 1fr);
-      }
-      aside {
-        max-height: 42vh;
-        border-right: 0;
-        border-bottom: 1px solid var(--line);
-      }
     }
   </style>
 </head>
 <body>
   <div class="layout">
-    <aside>
-      <h1>Distribución de clientes Dosmicos en Bogotá</h1>
-      <div class="meta">Mapa público anonimizado. Ventana: 2026-04-08 a 2026-07-07.</div>
-      <div class="stats">
-        <div class="stat"><strong>2.744</strong><span>clientes en celdas públicas</span></div>
-        <div class="stat"><strong>3.013</strong><span>pedidos representados</span></div>
-        <div class="stat"><strong>214</strong><span>zonas visibles</span></div>
-        <div class="stat"><strong>104</strong><span>zonas ocultas por baja densidad</span></div>
-      </div>
-      <div class="privacy">
-        Privacidad: no incluye nombres, teléfonos, correos, direcciones, órdenes, coordenadas exactas ni puntos individuales. Cada círculo es una celda aproximada de 1km y solo aparece si tiene al menos 5 clientes.
-      </div>
-    </aside>
     <main id="map"></main>
   </div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
   <script>
     const cells = [{"id":1,"key":"4.72,-74.04","lat":4.725,"lng":-74.03500000000001,"clients":43,"orders":44},{"id":2,"key":"4.73,-74.06","lat":4.735,"lng":-74.055,"clients":41,"orders":45},{"id":3,"key":"4.73,-74.07","lat":4.735,"lng":-74.065,"clients":40,"orders":47},{"id":4,"key":"4.74,-74.06","lat":4.745,"lng":-74.055,"clients":37,"orders":41},{"id":5,"key":"4.69,-74.05","lat":4.695,"lng":-74.045,"clients":35,"orders":39},{"id":6,"key":"4.67,-74.06","lat":4.675,"lng":-74.055,"clients":35,"orders":39},{"id":7,"key":"4.72,-74.05","lat":4.725,"lng":-74.045,"clients":31,"orders":35},{"id":8,"key":"4.69,-74.06","lat":4.695,"lng":-74.055,"clients":29,"orders":29},{"id":9,"key":"4.70,-74.06","lat":4.705,"lng":-74.055,"clients":28,"orders":33},{"id":10,"key":"4.75,-74.10","lat":4.755,"lng":-74.095,"clients":27,"orders":30},{"id":11,"key":"4.70,-74.04","lat":4.705,"lng":-74.03500000000001,"clients":27,"orders":33},{"id":12,"key":"4.66,-74.14","lat":4.665,"lng":-74.135,"clients":27,"orders":28},{"id":13,"key":"4.72,-74.07","lat":4.725,"lng":-74.065,"clients":27,"orders":33},{"id":14,"key":"4.68,-74.06","lat":4.685,"lng":-74.055,"clients":26,"orders":27},{"id":15,"key":"4.71,-74.04","lat":4.715,"lng":-74.03500000000001,"clients":26,"orders":27},{"id":16,"key":"4.66,-74.12","lat":4.665,"lng":-74.11500000000001,"clients":25,"orders":33},{"id":17,"key":"4.72,-74.13","lat":4.725,"lng":-74.125,"clients":25,"orders":26},{"id":18,"key":"4.70,-74.07","lat":4.705,"lng":-74.065,"clients":25,"orders":26},{"id":19,"key":"4.64,-74.15","lat":4.645,"lng":-74.14500000000001,"clients":25,"orders":28},{"id":20,"key":"4.74,-74.07","lat":4.745,"lng":-74.065,"clients":24,"orders":27},{"id":21,"key":"4.71,-74.05","lat":4.715,"lng":-74.045,"clients":24,"orders":27},{"id":22,"key":"4.64,-74.16","lat":4.645,"lng":-74.155,"clients":24,"orders":25},{"id":23,"key":"4.75,-74.06","lat":4.755,"lng":-74.055,"clients":23,"orders":25},{"id":24,"key":"4.65,-74.13","lat":4.655,"lng":-74.125,"clients":23,"orders":27},{"id":25,"key":"4.71,-74.06","lat":4.715,"lng":-74.055,"clients":23,"orders":25},{"id":26,"key":"4.64,-74.11","lat":4.645,"lng":-74.105,"clients":23,"orders":28},{"id":27,"key":"4.69,-74.09","lat":4.695,"lng":-74.08500000000001,"clients":23,"orders":24},{"id":28,"key":"4.64,-74.06","lat":4.645,"lng":-74.055,"clients":23,"orders":25},{"id":29,"key":"4.65,-74.12","lat":4.655,"lng":-74.11500000000001,"clients":22,"orders":24},{"id":30,"key":"4.68,-74.05","lat":4.685,"lng":-74.045,"clients":22,"orders":26},{"id":31,"key":"4.72,-74.06","lat":4.725,"lng":-74.055,"clients":21,"orders":25},{"id":32,"key":"4.69,-74.07","lat":4.695,"lng":-74.065,"clients":21,"orders":23},{"id":33,"key":"4.71,-74.08","lat":4.715,"lng":-74.075,"clients":21,"orders":24},{"id":34,"key":"4.67,-74.14","lat":4.675,"lng":-74.135,"clients":20,"orders":22},{"id":35,"key":"4.64,-74.13","lat":4.645,"lng":-74.125,"clients":20,"orders":22},{"id":36,"key":"4.67,-74.05","lat":4.675,"lng":-74.045,"clients":20,"orders":21},{"id":37,"key":"4.64,-74.09","lat":4.645,"lng":-74.08500000000001,"clients":20,"orders":23},{"id":38,"key":"4.70,-74.05","lat":4.705,"lng":-74.045,"clients":19,"orders":23},{"id":39,"key":"4.63,-74.07","lat":4.635,"lng":-74.065,"clients":19,"orders":19},{"id":40,"key":"4.70,-74.03","lat":4.705,"lng":-74.025,"clients":19,"orders":22},{"id":41,"key":"4.58,-74.16","lat":4.585,"lng":-74.155,"clients":19,"orders":20},{"id":42,"key":"4.73,-74.04","lat":4.735,"lng":-74.03500000000001,"clients":18,"orders":18},{"id":43,"key":"4.68,-74.07","lat":4.685,"lng":-74.065,"clients":18,"orders":20},{"id":44,"key":"4.68,-74.16","lat":4.685,"lng":-74.155,"clients":18,"orders":19},{"id":45,"key":"4.74,-74.04","lat":4.745,"lng":-74.03500000000001,"clients":18,"orders":20},{"id":46,"key":"4.60,-74.09","lat":4.6049999999999995,"lng":-74.08500000000001,"clients":17,"orders":19},{"id":47,"key":"4.65,-74.08","lat":4.655,"lng":-74.075,"clients":17,"orders":25},{"id":48,"key":"4.62,-74.13","lat":4.625,"lng":-74.125,"clients":17,"orders":17},{"id":49,"key":"4.70,-74.13","lat":4.705,"lng":-74.125,"clients":17,"orders":17},{"id":50,"key":"4.72,-74.14","lat":4.725,"lng":-74.135,"clients":17,"orders":20},{"id":51,"key":"4.62,-74.14","lat":4.625,"lng":-74.135,"clients":17,"orders":19},{"id":52,"key":"4.64,-74.14","lat":4.645,"lng":-74.135,"clients":16,"orders":18},{"id":53,"key":"4.67,-74.11","lat":4.675,"lng":-74.105,"clients":16,"orders":18},{"id":54,"key":"4.75,-74.03","lat":4.755,"lng":-74.025,"clients":16,"orders":19},{"id":55,"key":"4.66,-74.13","lat":4.665,"lng":-74.125,"clients":16,"orders":18},{"id":56,"key":"4.62,-74.09","lat":4.625,"lng":-74.08500000000001,"clients":16,"orders":19},{"id":57,"key":"4.74,-74.03","lat":4.745,"lng":-74.025,"clients":16,"orders":19},{"id":58,"key":"4.63,-74.16","lat":4.635,"lng":-74.155,"clients":15,"orders":15},{"id":59,"key":"4.66,-74.06","lat":4.665,"lng":-74.055,"clients":15,"orders":16},{"id":60,"key":"4.65,-74.06","lat":4.655,"lng":-74.055,"clients":15,"orders":17},{"id":61,"key":"4.74,-74.09","lat":4.745,"lng":-74.08500000000001,"clients":15,"orders":17},{"id":62,"key":"4.60,-74.08","lat":4.6049999999999995,"lng":-74.075,"clients":15,"orders":16},{"id":63,"key":"4.61,-74.08","lat":4.615,"lng":-74.075,"clients":15,"orders":16},{"id":64,"key":"4.71,-74.11","lat":4.715,"lng":-74.105,"clients":14,"orders":15},{"id":65,"key":"4.67,-74.13","lat":4.675,"lng":-74.125,"clients":14,"orders":16},{"id":66,"key":"4.65,-74.14","lat":4.655,"lng":-74.135,"clients":14,"orders":14},{"id":67,"key":"4.69,-74.04","lat":4.695,"lng":-74.03500000000001,"clients":14,"orders":15},{"id":68,"key":"4.66,-74.09","lat":4.665,"lng":-74.08500000000001,"clients":14,"orders":14},{"id":69,"key":"4.58,-74.09","lat":4.585,"lng":-74.08500000000001,"clients":14,"orders":14},{"id":70,"key":"4.61,-74.17","lat":4.615,"lng":-74.165,"clients":14,"orders":15},{"id":71,"key":"4.58,-74.11","lat":4.585,"lng":-74.105,"clients":14,"orders":15},{"id":72,"key":"4.63,-74.08","lat":4.635,"lng":-74.075,"clients":13,"orders":13},{"id":73,"key":"4.61,-74.09","lat":4.615,"lng":-74.08500000000001,"clients":13,"orders":14},{"id":74,"key":"4.59,-74.10","lat":4.595,"lng":-74.095,"clients":13,"orders":14},{"id":75,"key":"4.60,-74.15","lat":4.6049999999999995,"lng":-74.14500000000001,"clients":13,"orders":14},{"id":76,"key":"4.67,-74.15","lat":4.675,"lng":-74.14500000000001,"clients":13,"orders":19},{"id":77,"key":"4.76,-74.04","lat":4.765,"lng":-74.03500000000001,"clients":13,"orders":14},{"id":78,"key":"4.75,-74.05","lat":4.755,"lng":-74.045,"clients":13,"orders":14},{"id":79,"key":"4.75,-74.11","lat":4.755,"lng":-74.105,"clients":13,"orders":14},{"id":80,"key":"4.59,-74.08","lat":4.595,"lng":-74.075,"clients":13,"orders":16},{"id":81,"key":"4.72,-74.12","lat":4.725,"lng":-74.11500000000001,"clients":13,"orders":13},{"id":82,"key":"4.59,-74.17","lat":4.595,"lng":-74.165,"clients":13,"orders":16},{"id":83,"key":"4.71,-74.13","lat":4.715,"lng":-74.125,"clients":13,"orders":13},{"id":84,"key":"4.76,-74.05","lat":4.765,"lng":-74.045,"clients":13,"orders":13},{"id":85,"key":"4.75,-74.04","lat":4.755,"lng":-74.03500000000001,"clients":13,"orders":13},{"id":86,"key":"4.70,-74.12","lat":4.705,"lng":-74.11500000000001,"clients":13,"orders":14},{"id":87,"key":"4.60,-74.12","lat":4.6049999999999995,"lng":-74.11500000000001,"clients":13,"orders":13},{"id":88,"key":"4.59,-74.12","lat":4.595,"lng":-74.11500000000001,"clients":12,"orders":15},{"id":89,"key":"4.63,-74.10","lat":4.635,"lng":-74.095,"clients":12,"orders":13},{"id":90,"key":"4.61,-74.16","lat":4.615,"lng":-74.155,"clients":12,"orders":13},{"id":91,"key":"4.71,-74.07","lat":4.715,"lng":-74.065,"clients":12,"orders":12},{"id":92,"key":"4.73,-74.10","lat":4.735,"lng":-74.095,"clients":12,"orders":13},{"id":93,"key":"4.61,-74.11","lat":4.615,"lng":-74.105,"clients":12,"orders":12},{"id":94,"key":"4.63,-74.13","lat":4.635,"lng":-74.125,"clients":12,"orders":15},{"id":95,"key":"4.69,-74.11","lat":4.695,"lng":-74.105,"clients":12,"orders":12},{"id":96,"key":"4.58,-74.10","lat":4.585,"lng":-74.095,"clients":12,"orders":13},{"id":97,"key":"4.65,-74.11","lat":4.655,"lng":-74.105,"clients":12,"orders":14},{"id":98,"key":"4.73,-74.11","lat":4.735,"lng":-74.105,"clients":12,"orders":12},{"id":99,"key":"4.59,-74.13","lat":4.595,"lng":-74.125,"clients":11,"orders":11},{"id":100,"key":"4.56,-74.15","lat":4.5649999999999995,"lng":-74.14500000000001,"clients":11,"orders":11},{"id":101,"key":"4.66,-74.05","lat":4.665,"lng":-74.045,"clients":11,"orders":13},{"id":102,"key":"4.60,-74.11","lat":4.6049999999999995,"lng":-74.105,"clients":11,"orders":11},{"id":103,"key":"4.63,-74.17","lat":4.635,"lng":-74.165,"clients":11,"orders":11},{"id":104,"key":"4.61,-74.12","lat":4.615,"lng":-74.11500000000001,"clients":11,"orders":11},{"id":105,"key":"4.62,-74.19","lat":4.625,"lng":-74.185,"clients":11,"orders":12},{"id":106,"key":"4.59,-74.16","lat":4.595,"lng":-74.155,"clients":10,"orders":11},{"id":107,"key":"4.75,-74.09","lat":4.755,"lng":-74.08500000000001,"clients":10,"orders":11},{"id":108,"key":"4.63,-74.19","lat":4.635,"lng":-74.185,"clients":10,"orders":11},{"id":109,"key":"4.63,-74.15","lat":4.635,"lng":-74.14500000000001,"clients":10,"orders":11},{"id":110,"key":"4.73,-74.03","lat":4.735,"lng":-74.025,"clients":10,"orders":10},{"id":111,"key":"4.72,-74.03","lat":4.725,"lng":-74.025,"clients":10,"orders":10},{"id":112,"key":"4.64,-74.07","lat":4.645,"lng":-74.065,"clients":10,"orders":11},{"id":113,"key":"4.67,-74.16","lat":4.675,"lng":-74.155,"clients":10,"orders":10},{"id":114,"key":"4.74,-74.05","lat":4.745,"lng":-74.045,"clients":10,"orders":11},{"id":115,"key":"4.60,-74.13","lat":4.6049999999999995,"lng":-74.125,"clients":10,"orders":10},{"id":116,"key":"4.68,-74.04","lat":4.685,"lng":-74.03500000000001,"clients":10,"orders":11},{"id":117,"key":"4.60,-74.20","lat":4.6049999999999995,"lng":-74.19500000000001,"clients":10,"orders":13},{"id":118,"key":"4.65,-74.07","lat":4.655,"lng":-74.065,"clients":10,"orders":10},{"id":119,"key":"4.74,-74.10","lat":4.745,"lng":-74.095,"clients":10,"orders":13},{"id":120,"key":"4.74,-74.11","lat":4.745,"lng":-74.105,"clients":10,"orders":10},{"id":121,"key":"4.61,-74.20","lat":4.615,"lng":-74.19500000000001,"clients":9,"orders":9},{"id":122,"key":"4.70,-74.11","lat":4.705,"lng":-74.105,"clients":9,"orders":9},{"id":123,"key":"4.73,-74.09","lat":4.735,"lng":-74.08500000000001,"clients":9,"orders":9},{"id":124,"key":"4.63,-74.20","lat":4.635,"lng":-74.19500000000001,"clients":9,"orders":10},{"id":125,"key":"4.66,-74.08","lat":4.665,"lng":-74.075,"clients":9,"orders":11},{"id":126,"key":"4.64,-74.12","lat":4.645,"lng":-74.11500000000001,"clients":9,"orders":9},{"id":127,"key":"4.59,-74.11","lat":4.595,"lng":-74.105,"clients":9,"orders":9},{"id":128,"key":"4.62,-74.17","lat":4.625,"lng":-74.165,"clients":9,"orders":9},{"id":129,"key":"4.68,-74.11","lat":4.685,"lng":-74.105,"clients":9,"orders":11},{"id":130,"key":"4.62,-74.18","lat":4.625,"lng":-74.17500000000001,"clients":9,"orders":10},{"id":131,"key":"4.64,-74.17","lat":4.645,"lng":-74.165,"clients":9,"orders":12},{"id":132,"key":"4.69,-74.10","lat":4.695,"lng":-74.095,"clients":9,"orders":9},{"id":133,"key":"4.70,-74.14","lat":4.705,"lng":-74.135,"clients":9,"orders":9},{"id":134,"key":"4.61,-74.14","lat":4.615,"lng":-74.135,"clients":9,"orders":9},{"id":135,"key":"4.66,-74.07","lat":4.665,"lng":-74.065,"clients":9,"orders":9},{"id":136,"key":"4.58,-74.12","lat":4.585,"lng":-74.11500000000001,"clients":9,"orders":10},{"id":137,"key":"4.68,-74.10","lat":4.685,"lng":-74.095,"clients":9,"orders":9},{"id":138,"key":"4.61,-74.15","lat":4.615,"lng":-74.14500000000001,"clients":9,"orders":9},{"id":139,"key":"4.72,-74.10","lat":4.725,"lng":-74.095,"clients":9,"orders":9},{"id":140,"key":"4.67,-74.08","lat":4.675,"lng":-74.075,"clients":9,"orders":10},{"id":141,"key":"4.72,-74.08","lat":4.725,"lng":-74.075,"clients":9,"orders":9},{"id":142,"key":"4.58,-74.13","lat":4.585,"lng":-74.125,"clients":8,"orders":9},{"id":143,"key":"4.58,-74.17","lat":4.585,"lng":-74.165,"clients":8,"orders":9},{"id":144,"key":"4.61,-74.18","lat":4.615,"lng":-74.17500000000001,"clients":8,"orders":9},{"id":145,"key":"4.60,-74.10","lat":4.6049999999999995,"lng":-74.095,"clients":8,"orders":8},{"id":146,"key":"4.61,-74.13","lat":4.615,"lng":-74.125,"clients":8,"orders":9},{"id":147,"key":"4.61,-74.07","lat":4.615,"lng":-74.065,"clients":8,"orders":8},{"id":148,"key":"4.60,-74.14","lat":4.6049999999999995,"lng":-74.135,"clients":8,"orders":8},{"id":149,"key":"4.69,-74.08","lat":4.695,"lng":-74.075,"clients":8,"orders":9},{"id":150,"key":"4.60,-74.19","lat":4.6049999999999995,"lng":-74.185,"clients":8,"orders":8},{"id":151,"key":"4.65,-74.16","lat":4.655,"lng":-74.155,"clients":8,"orders":8},{"id":152,"key":"4.62,-74.08","lat":4.625,"lng":-74.075,"clients":8,"orders":8},{"id":153,"key":"4.68,-74.08","lat":4.685,"lng":-74.075,"clients":8,"orders":8},{"id":154,"key":"4.67,-74.10","lat":4.675,"lng":-74.095,"clients":8,"orders":10},{"id":155,"key":"4.57,-74.11","lat":4.575,"lng":-74.105,"clients":7,"orders":8},{"id":156,"key":"4.59,-74.09","lat":4.595,"lng":-74.08500000000001,"clients":7,"orders":7},{"id":157,"key":"4.57,-74.10","lat":4.575,"lng":-74.095,"clients":7,"orders":8},{"id":158,"key":"4.67,-74.12","lat":4.675,"lng":-74.11500000000001,"clients":7,"orders":8},{"id":159,"key":"4.75,-74.12","lat":4.755,"lng":-74.11500000000001,"clients":7,"orders":8},{"id":160,"key":"4.63,-74.14","lat":4.635,"lng":-74.135,"clients":7,"orders":8},{"id":161,"key":"4.66,-74.15","lat":4.665,"lng":-74.14500000000001,"clients":7,"orders":7},{"id":162,"key":"4.62,-74.15","lat":4.625,"lng":-74.14500000000001,"clients":7,"orders":10},{"id":163,"key":"4.62,-74.16","lat":4.625,"lng":-74.155,"clients":7,"orders":7},{"id":164,"key":"4.73,-74.05","lat":4.735,"lng":-74.045,"clients":7,"orders":8},{"id":165,"key":"4.60,-74.07","lat":4.6049999999999995,"lng":-74.065,"clients":7,"orders":8},{"id":166,"key":"4.65,-74.17","lat":4.655,"lng":-74.165,"clients":7,"orders":7},{"id":167,"key":"4.55,-74.12","lat":4.555,"lng":-74.11500000000001,"clients":7,"orders":8},{"id":168,"key":"4.69,-74.12","lat":4.695,"lng":-74.11500000000001,"clients":7,"orders":8},{"id":169,"key":"4.68,-74.09","lat":4.685,"lng":-74.08500000000001,"clients":7,"orders":7},{"id":170,"key":"4.59,-74.14","lat":4.595,"lng":-74.135,"clients":7,"orders":8},{"id":171,"key":"4.58,-74.15","lat":4.585,"lng":-74.14500000000001,"clients":7,"orders":7},{"id":172,"key":"4.65,-74.15","lat":4.655,"lng":-74.14500000000001,"clients":7,"orders":8},{"id":173,"key":"4.62,-74.12","lat":4.625,"lng":-74.11500000000001,"clients":7,"orders":7},{"id":174,"key":"4.63,-74.21","lat":4.635,"lng":-74.205,"clients":6,"orders":11},{"id":175,"key":"4.56,-74.09","lat":4.5649999999999995,"lng":-74.08500000000001,"clients":6,"orders":7},{"id":176,"key":"4.68,-74.12","lat":4.685,"lng":-74.11500000000001,"clients":6,"orders":6},{"id":177,"key":"4.56,-74.11","lat":4.5649999999999995,"lng":-74.105,"clients":6,"orders":6},{"id":178,"key":"4.71,-74.14","lat":4.715,"lng":-74.135,"clients":6,"orders":6},{"id":179,"key":"4.57,-74.09","lat":4.575,"lng":-74.08500000000001,"clients":6,"orders":6},{"id":180,"key":"4.64,-74.18","lat":4.645,"lng":-74.17500000000001,"clients":6,"orders":6},{"id":181,"key":"4.74,-74.12","lat":4.745,"lng":-74.11500000000001,"clients":6,"orders":7},{"id":182,"key":"4.71,-74.10","lat":4.715,"lng":-74.095,"clients":6,"orders":6},{"id":183,"key":"4.68,-74.14","lat":4.685,"lng":-74.135,"clients":6,"orders":6},{"id":184,"key":"4.62,-74.21","lat":4.625,"lng":-74.205,"clients":6,"orders":10},{"id":185,"key":"4.57,-74.13","lat":4.575,"lng":-74.125,"clients":6,"orders":6},{"id":186,"key":"4.59,-74.15","lat":4.595,"lng":-74.14500000000001,"clients":6,"orders":7},{"id":187,"key":"4.57,-74.14","lat":4.575,"lng":-74.135,"clients":6,"orders":6},{"id":188,"key":"4.63,-74.18","lat":4.635,"lng":-74.17500000000001,"clients":6,"orders":6},{"id":189,"key":"4.77,-74.05","lat":4.7749999999999995,"lng":-74.045,"clients":6,"orders":6},{"id":190,"key":"4.49,-74.12","lat":4.495,"lng":-74.11500000000001,"clients":6,"orders":6},{"id":191,"key":"4.60,-74.17","lat":4.6049999999999995,"lng":-74.165,"clients":6,"orders":9},{"id":192,"key":"4.57,-74.17","lat":4.575,"lng":-74.165,"clients":6,"orders":6},{"id":193,"key":"4.59,-74.18","lat":4.595,"lng":-74.17500000000001,"clients":6,"orders":6},{"id":194,"key":"4.71,-74.03","lat":4.715,"lng":-74.025,"clients":6,"orders":6},{"id":195,"key":"4.60,-74.16","lat":4.6049999999999995,"lng":-74.155,"clients":6,"orders":6},{"id":196,"key":"4.51,-74.12","lat":4.515,"lng":-74.11500000000001,"clients":5,"orders":7},{"id":197,"key":"4.71,-74.12","lat":4.715,"lng":-74.11500000000001,"clients":5,"orders":5},{"id":198,"key":"4.65,-74.05","lat":4.655,"lng":-74.045,"clients":5,"orders":5},{"id":199,"key":"4.56,-74.12","lat":4.5649999999999995,"lng":-74.11500000000001,"clients":5,"orders":6},{"id":200,"key":"4.68,-74.15","lat":4.685,"lng":-74.14500000000001,"clients":5,"orders":5},{"id":201,"key":"4.70,-74.08","lat":4.705,"lng":-74.075,"clients":5,"orders":6},{"id":202,"key":"4.70,-74.09","lat":4.705,"lng":-74.08500000000001,"clients":5,"orders":5},{"id":203,"key":"4.54,-74.11","lat":4.545,"lng":-74.105,"clients":5,"orders":5},{"id":204,"key":"4.62,-74.07","lat":4.625,"lng":-74.065,"clients":5,"orders":6},{"id":205,"key":"4.54,-74.09","lat":4.545,"lng":-74.08500000000001,"clients":5,"orders":6},{"id":206,"key":"4.70,-74.10","lat":4.705,"lng":-74.095,"clients":5,"orders":5},{"id":207,"key":"4.53,-74.09","lat":4.535,"lng":-74.08500000000001,"clients":5,"orders":5},{"id":208,"key":"4.56,-74.10","lat":4.5649999999999995,"lng":-74.095,"clients":5,"orders":5},{"id":209,"key":"4.69,-74.17","lat":4.695,"lng":-74.165,"clients":5,"orders":5},{"id":210,"key":"4.54,-74.12","lat":4.545,"lng":-74.11500000000001,"clients":5,"orders":5},{"id":211,"key":"4.58,-74.14","lat":4.585,"lng":-74.135,"clients":5,"orders":5},{"id":212,"key":"4.50,-74.12","lat":4.505,"lng":-74.11500000000001,"clients":5,"orders":6},{"id":213,"key":"4.62,-74.20","lat":4.625,"lng":-74.19500000000001,"clients":5,"orders":6},{"id":214,"key":"4.66,-74.16","lat":4.665,"lng":-74.155,"clients":5,"orders":6}];
     const maxClients = Math.max(...cells.map((cell) => cell.clients));
@@ -120,22 +68,13 @@
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    for (const cell of cells) {
-      const intensity = cell.clients / maxClients;
-      const radius = 180 + Math.sqrt(cell.clients) * 92;
-      const color = intensity > 0.62 ? '#d95f0e' : intensity > 0.34 ? '#f59f00' : '#1b8f76';
-      L.circle([cell.lat, cell.lng], {
-        radius,
-        color,
-        weight: 1,
-        fillColor: color,
-        fillOpacity: 0.32,
-      }).bindPopup(
-        '<div class="popup"><b>Zona #' + cell.id + '</b>' +
-        '<br>Clientes: <b>' + cell.clients.toLocaleString('es-CO') + '</b>' +
-        '<br>Pedidos: <b>' + cell.orders.toLocaleString('es-CO') + '</b></div>'
-      ).addTo(map);
-    }
+    L.heatLayer(cells.map((cell) => [cell.lat, cell.lng, cell.clients / maxClients]), {
+      radius: 34,
+      blur: 26,
+      maxZoom: 14,
+      minOpacity: 0.22,
+      gradient: { 0.18: '#2b8cbe', 0.45: '#41ab5d', 0.72: '#fec44f', 1.0: '#d95f0e' }
+    }).addTo(map);
 
     const bounds = L.latLngBounds(cells.map((cell) => [cell.lat, cell.lng]));
     if (cells.length) map.fitBounds(bounds.pad(0.1));
