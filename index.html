@@ -3,8 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Mapa de calor clientes Dosmicos en Bogotá</title>
+  <title>Clientes Dosmicos Bogotá - mapa público</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
   <style>
     :root {
       --ink: #172033;
@@ -22,45 +24,131 @@
       background: var(--soft);
     }
     .layout {
+      display: grid;
+      grid-template-columns: 340px minmax(0, 1fr);
       width: 100vw;
       height: 100vh;
     }
-    #map { width: 100%; height: 100%; }
-    .badge {
-      position: fixed;
-      left: 14px;
-      top: 14px;
-      z-index: 500;
-      width: min(320px, calc(100vw - 28px));
-      padding: 12px 14px;
-      border: 1px solid rgba(217, 222, 232, .9);
+    aside {
+      background: var(--panel);
+      border-right: 1px solid var(--line);
+      padding: 18px;
+      overflow: auto;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 21px;
+      line-height: 1.16;
+      letter-spacing: 0;
+    }
+    .meta {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+      margin-bottom: 18px;
+    }
+    .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .stat {
+      border: 1px solid var(--line);
       border-radius: 8px;
-      background: rgba(255, 255, 255, .92);
-      box-shadow: 0 8px 24px rgba(23, 32, 51, .12);
-      backdrop-filter: blur(8px);
+      padding: 10px;
+      background: #fff;
+      min-height: 74px;
     }
-    .badge strong {
+    .stat strong {
       display: block;
-      margin-bottom: 4px;
-      font-size: 15px;
-      line-height: 1.2;
+      font-size: 24px;
+      line-height: 1;
+      margin-bottom: 6px;
     }
-    .badge span {
-      display: block;
+    .stat span {
       color: var(--muted);
       font-size: 12px;
+      line-height: 1.25;
+    }
+    .controls {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    button {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+      font-size: 14px;
+      padding: 10px 12px;
+      cursor: pointer;
+    }
+    button.active {
+      border-color: var(--accent);
+      color: #fff;
+      background: var(--accent);
+    }
+    button:hover { border-color: #106451; }
+    .note {
+      border-top: 1px solid var(--line);
+      padding-top: 14px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    #map { width: 100%; height: 100%; }
+    .popup {
+      min-width: 180px;
+      font-size: 13px;
       line-height: 1.35;
+    }
+    .popup b { color: var(--ink); }
+    @media (max-width: 820px) {
+      .layout {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto minmax(0, 1fr);
+      }
+      aside {
+        max-height: 42vh;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
     }
   </style>
 </head>
 <body>
   <div class="layout">
+    <aside>
+      <h1>Clientes Dosmicos en Bogotá</h1>
+      <div class="meta">
+        Versión pública anonimizada. Ventana: 2026-04-08 a 2026-07-07.
+      </div>
+      <div class="stat-grid">
+        <div class="stat"><strong>2.744</strong><span>clientes en zonas públicas</span></div>
+        <div class="stat"><strong>214</strong><span>zonas visibles</span></div>
+        <div class="stat"><strong>2.956</strong><span>clientes privados analizados</span></div>
+        <div class="stat"><strong>104</strong><span>zonas ocultas por baja densidad</span></div>
+      </div>
+      <div class="controls">
+        <button id="toggleClusters" class="active">Zonas / clusters</button>
+        <button id="toggleHeat" class="active">Mapa de calor</button>
+        <button id="fitBounds">Ver toda Bogotá</button>
+      </div>
+      <div class="note">
+        Privacidad: no incluye nombres, teléfonos, correos, direcciones, órdenes, coordenadas exactas ni puntos individuales. Cada punto representa una zona aproximada de 1km con mínimo 5 clientes.
+      </div>
+    </aside>
     <main id="map"></main>
   </div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
   <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
   <script>
-    const cells = [{"lat":4.725,"lng":-74.03500000000001,"clients":43},{"lat":4.735,"lng":-74.055,"clients":41},{"lat":4.735,"lng":-74.065,"clients":40},{"lat":4.745,"lng":-74.055,"clients":37},{"lat":4.695,"lng":-74.045,"clients":35},{"lat":4.675,"lng":-74.055,"clients":35},{"lat":4.725,"lng":-74.045,"clients":31},{"lat":4.695,"lng":-74.055,"clients":29},{"lat":4.705,"lng":-74.055,"clients":28},{"lat":4.755,"lng":-74.095,"clients":27},{"lat":4.705,"lng":-74.03500000000001,"clients":27},{"lat":4.665,"lng":-74.135,"clients":27},{"lat":4.725,"lng":-74.065,"clients":27},{"lat":4.685,"lng":-74.055,"clients":26},{"lat":4.715,"lng":-74.03500000000001,"clients":26},{"lat":4.665,"lng":-74.11500000000001,"clients":25},{"lat":4.725,"lng":-74.125,"clients":25},{"lat":4.705,"lng":-74.065,"clients":25},{"lat":4.645,"lng":-74.14500000000001,"clients":25},{"lat":4.745,"lng":-74.065,"clients":24},{"lat":4.715,"lng":-74.045,"clients":24},{"lat":4.645,"lng":-74.155,"clients":24},{"lat":4.755,"lng":-74.055,"clients":23},{"lat":4.655,"lng":-74.125,"clients":23},{"lat":4.715,"lng":-74.055,"clients":23},{"lat":4.645,"lng":-74.105,"clients":23},{"lat":4.695,"lng":-74.08500000000001,"clients":23},{"lat":4.645,"lng":-74.055,"clients":23},{"lat":4.655,"lng":-74.11500000000001,"clients":22},{"lat":4.685,"lng":-74.045,"clients":22},{"lat":4.725,"lng":-74.055,"clients":21},{"lat":4.695,"lng":-74.065,"clients":21},{"lat":4.715,"lng":-74.075,"clients":21},{"lat":4.675,"lng":-74.135,"clients":20},{"lat":4.645,"lng":-74.125,"clients":20},{"lat":4.675,"lng":-74.045,"clients":20},{"lat":4.645,"lng":-74.08500000000001,"clients":20},{"lat":4.705,"lng":-74.045,"clients":19},{"lat":4.635,"lng":-74.065,"clients":19},{"lat":4.705,"lng":-74.025,"clients":19},{"lat":4.585,"lng":-74.155,"clients":19},{"lat":4.735,"lng":-74.03500000000001,"clients":18},{"lat":4.685,"lng":-74.065,"clients":18},{"lat":4.685,"lng":-74.155,"clients":18},{"lat":4.745,"lng":-74.03500000000001,"clients":18},{"lat":4.6049999999999995,"lng":-74.08500000000001,"clients":17},{"lat":4.655,"lng":-74.075,"clients":17},{"lat":4.625,"lng":-74.125,"clients":17},{"lat":4.705,"lng":-74.125,"clients":17},{"lat":4.725,"lng":-74.135,"clients":17},{"lat":4.625,"lng":-74.135,"clients":17},{"lat":4.645,"lng":-74.135,"clients":16},{"lat":4.675,"lng":-74.105,"clients":16},{"lat":4.755,"lng":-74.025,"clients":16},{"lat":4.665,"lng":-74.125,"clients":16},{"lat":4.625,"lng":-74.08500000000001,"clients":16},{"lat":4.745,"lng":-74.025,"clients":16},{"lat":4.635,"lng":-74.155,"clients":15},{"lat":4.665,"lng":-74.055,"clients":15},{"lat":4.655,"lng":-74.055,"clients":15},{"lat":4.745,"lng":-74.08500000000001,"clients":15},{"lat":4.6049999999999995,"lng":-74.075,"clients":15},{"lat":4.615,"lng":-74.075,"clients":15},{"lat":4.715,"lng":-74.105,"clients":14},{"lat":4.675,"lng":-74.125,"clients":14},{"lat":4.655,"lng":-74.135,"clients":14},{"lat":4.695,"lng":-74.03500000000001,"clients":14},{"lat":4.665,"lng":-74.08500000000001,"clients":14},{"lat":4.585,"lng":-74.08500000000001,"clients":14},{"lat":4.615,"lng":-74.165,"clients":14},{"lat":4.585,"lng":-74.105,"clients":14},{"lat":4.635,"lng":-74.075,"clients":13},{"lat":4.615,"lng":-74.08500000000001,"clients":13},{"lat":4.595,"lng":-74.095,"clients":13},{"lat":4.6049999999999995,"lng":-74.14500000000001,"clients":13},{"lat":4.675,"lng":-74.14500000000001,"clients":13},{"lat":4.765,"lng":-74.03500000000001,"clients":13},{"lat":4.755,"lng":-74.045,"clients":13},{"lat":4.755,"lng":-74.105,"clients":13},{"lat":4.595,"lng":-74.075,"clients":13},{"lat":4.725,"lng":-74.11500000000001,"clients":13},{"lat":4.595,"lng":-74.165,"clients":13},{"lat":4.715,"lng":-74.125,"clients":13},{"lat":4.765,"lng":-74.045,"clients":13},{"lat":4.755,"lng":-74.03500000000001,"clients":13},{"lat":4.705,"lng":-74.11500000000001,"clients":13},{"lat":4.6049999999999995,"lng":-74.11500000000001,"clients":13},{"lat":4.595,"lng":-74.11500000000001,"clients":12},{"lat":4.635,"lng":-74.095,"clients":12},{"lat":4.615,"lng":-74.155,"clients":12},{"lat":4.715,"lng":-74.065,"clients":12},{"lat":4.735,"lng":-74.095,"clients":12},{"lat":4.615,"lng":-74.105,"clients":12},{"lat":4.635,"lng":-74.125,"clients":12},{"lat":4.695,"lng":-74.105,"clients":12},{"lat":4.585,"lng":-74.095,"clients":12},{"lat":4.655,"lng":-74.105,"clients":12},{"lat":4.735,"lng":-74.105,"clients":12},{"lat":4.595,"lng":-74.125,"clients":11},{"lat":4.5649999999999995,"lng":-74.14500000000001,"clients":11},{"lat":4.665,"lng":-74.045,"clients":11},{"lat":4.6049999999999995,"lng":-74.105,"clients":11},{"lat":4.635,"lng":-74.165,"clients":11},{"lat":4.615,"lng":-74.11500000000001,"clients":11},{"lat":4.625,"lng":-74.185,"clients":11},{"lat":4.595,"lng":-74.155,"clients":10},{"lat":4.755,"lng":-74.08500000000001,"clients":10},{"lat":4.635,"lng":-74.185,"clients":10},{"lat":4.635,"lng":-74.14500000000001,"clients":10},{"lat":4.735,"lng":-74.025,"clients":10},{"lat":4.725,"lng":-74.025,"clients":10},{"lat":4.645,"lng":-74.065,"clients":10},{"lat":4.675,"lng":-74.155,"clients":10},{"lat":4.745,"lng":-74.045,"clients":10},{"lat":4.6049999999999995,"lng":-74.125,"clients":10},{"lat":4.685,"lng":-74.03500000000001,"clients":10},{"lat":4.6049999999999995,"lng":-74.19500000000001,"clients":10},{"lat":4.655,"lng":-74.065,"clients":10},{"lat":4.745,"lng":-74.095,"clients":10},{"lat":4.745,"lng":-74.105,"clients":10},{"lat":4.615,"lng":-74.19500000000001,"clients":9},{"lat":4.705,"lng":-74.105,"clients":9},{"lat":4.735,"lng":-74.08500000000001,"clients":9},{"lat":4.635,"lng":-74.19500000000001,"clients":9},{"lat":4.665,"lng":-74.075,"clients":9},{"lat":4.645,"lng":-74.11500000000001,"clients":9},{"lat":4.595,"lng":-74.105,"clients":9},{"lat":4.625,"lng":-74.165,"clients":9},{"lat":4.685,"lng":-74.105,"clients":9},{"lat":4.625,"lng":-74.17500000000001,"clients":9},{"lat":4.645,"lng":-74.165,"clients":9},{"lat":4.695,"lng":-74.095,"clients":9},{"lat":4.705,"lng":-74.135,"clients":9},{"lat":4.615,"lng":-74.135,"clients":9},{"lat":4.665,"lng":-74.065,"clients":9},{"lat":4.585,"lng":-74.11500000000001,"clients":9},{"lat":4.685,"lng":-74.095,"clients":9},{"lat":4.615,"lng":-74.14500000000001,"clients":9},{"lat":4.725,"lng":-74.095,"clients":9},{"lat":4.675,"lng":-74.075,"clients":9},{"lat":4.725,"lng":-74.075,"clients":9},{"lat":4.585,"lng":-74.125,"clients":8},{"lat":4.585,"lng":-74.165,"clients":8},{"lat":4.615,"lng":-74.17500000000001,"clients":8},{"lat":4.6049999999999995,"lng":-74.095,"clients":8},{"lat":4.615,"lng":-74.125,"clients":8},{"lat":4.615,"lng":-74.065,"clients":8},{"lat":4.6049999999999995,"lng":-74.135,"clients":8},{"lat":4.695,"lng":-74.075,"clients":8},{"lat":4.6049999999999995,"lng":-74.185,"clients":8},{"lat":4.655,"lng":-74.155,"clients":8},{"lat":4.625,"lng":-74.075,"clients":8},{"lat":4.685,"lng":-74.075,"clients":8},{"lat":4.675,"lng":-74.095,"clients":8},{"lat":4.575,"lng":-74.105,"clients":7},{"lat":4.595,"lng":-74.08500000000001,"clients":7},{"lat":4.575,"lng":-74.095,"clients":7},{"lat":4.675,"lng":-74.11500000000001,"clients":7},{"lat":4.755,"lng":-74.11500000000001,"clients":7},{"lat":4.635,"lng":-74.135,"clients":7},{"lat":4.665,"lng":-74.14500000000001,"clients":7},{"lat":4.625,"lng":-74.14500000000001,"clients":7},{"lat":4.625,"lng":-74.155,"clients":7},{"lat":4.735,"lng":-74.045,"clients":7},{"lat":4.6049999999999995,"lng":-74.065,"clients":7},{"lat":4.655,"lng":-74.165,"clients":7},{"lat":4.555,"lng":-74.11500000000001,"clients":7},{"lat":4.695,"lng":-74.11500000000001,"clients":7},{"lat":4.685,"lng":-74.08500000000001,"clients":7},{"lat":4.595,"lng":-74.135,"clients":7},{"lat":4.585,"lng":-74.14500000000001,"clients":7},{"lat":4.655,"lng":-74.14500000000001,"clients":7},{"lat":4.625,"lng":-74.11500000000001,"clients":7},{"lat":4.635,"lng":-74.205,"clients":6},{"lat":4.5649999999999995,"lng":-74.08500000000001,"clients":6},{"lat":4.685,"lng":-74.11500000000001,"clients":6},{"lat":4.5649999999999995,"lng":-74.105,"clients":6},{"lat":4.715,"lng":-74.135,"clients":6},{"lat":4.575,"lng":-74.08500000000001,"clients":6},{"lat":4.645,"lng":-74.17500000000001,"clients":6},{"lat":4.745,"lng":-74.11500000000001,"clients":6},{"lat":4.715,"lng":-74.095,"clients":6},{"lat":4.685,"lng":-74.135,"clients":6},{"lat":4.625,"lng":-74.205,"clients":6},{"lat":4.575,"lng":-74.125,"clients":6},{"lat":4.595,"lng":-74.14500000000001,"clients":6},{"lat":4.575,"lng":-74.135,"clients":6},{"lat":4.635,"lng":-74.17500000000001,"clients":6},{"lat":4.7749999999999995,"lng":-74.045,"clients":6},{"lat":4.495,"lng":-74.11500000000001,"clients":6},{"lat":4.6049999999999995,"lng":-74.165,"clients":6},{"lat":4.575,"lng":-74.165,"clients":6},{"lat":4.595,"lng":-74.17500000000001,"clients":6},{"lat":4.715,"lng":-74.025,"clients":6},{"lat":4.6049999999999995,"lng":-74.155,"clients":6},{"lat":4.515,"lng":-74.11500000000001,"clients":5},{"lat":4.715,"lng":-74.11500000000001,"clients":5},{"lat":4.655,"lng":-74.045,"clients":5},{"lat":4.5649999999999995,"lng":-74.11500000000001,"clients":5},{"lat":4.685,"lng":-74.14500000000001,"clients":5},{"lat":4.705,"lng":-74.075,"clients":5},{"lat":4.705,"lng":-74.08500000000001,"clients":5},{"lat":4.545,"lng":-74.105,"clients":5},{"lat":4.625,"lng":-74.065,"clients":5},{"lat":4.545,"lng":-74.08500000000001,"clients":5},{"lat":4.705,"lng":-74.095,"clients":5},{"lat":4.535,"lng":-74.08500000000001,"clients":5},{"lat":4.5649999999999995,"lng":-74.095,"clients":5},{"lat":4.695,"lng":-74.165,"clients":5},{"lat":4.545,"lng":-74.11500000000001,"clients":5},{"lat":4.585,"lng":-74.135,"clients":5},{"lat":4.505,"lng":-74.11500000000001,"clients":5},{"lat":4.625,"lng":-74.19500000000001,"clients":5},{"lat":4.665,"lng":-74.155,"clients":5}];
+    const cells = [{"id":1,"lat":4.725,"lng":-74.03500000000001,"clients":43},{"id":2,"lat":4.735,"lng":-74.055,"clients":41},{"id":3,"lat":4.735,"lng":-74.065,"clients":40},{"id":4,"lat":4.745,"lng":-74.055,"clients":37},{"id":5,"lat":4.695,"lng":-74.045,"clients":35},{"id":6,"lat":4.675,"lng":-74.055,"clients":35},{"id":7,"lat":4.725,"lng":-74.045,"clients":31},{"id":8,"lat":4.695,"lng":-74.055,"clients":29},{"id":9,"lat":4.705,"lng":-74.055,"clients":28},{"id":10,"lat":4.755,"lng":-74.095,"clients":27},{"id":11,"lat":4.705,"lng":-74.03500000000001,"clients":27},{"id":12,"lat":4.665,"lng":-74.135,"clients":27},{"id":13,"lat":4.725,"lng":-74.065,"clients":27},{"id":14,"lat":4.685,"lng":-74.055,"clients":26},{"id":15,"lat":4.715,"lng":-74.03500000000001,"clients":26},{"id":16,"lat":4.665,"lng":-74.11500000000001,"clients":25},{"id":17,"lat":4.725,"lng":-74.125,"clients":25},{"id":18,"lat":4.705,"lng":-74.065,"clients":25},{"id":19,"lat":4.645,"lng":-74.14500000000001,"clients":25},{"id":20,"lat":4.745,"lng":-74.065,"clients":24},{"id":21,"lat":4.715,"lng":-74.045,"clients":24},{"id":22,"lat":4.645,"lng":-74.155,"clients":24},{"id":23,"lat":4.755,"lng":-74.055,"clients":23},{"id":24,"lat":4.655,"lng":-74.125,"clients":23},{"id":25,"lat":4.715,"lng":-74.055,"clients":23},{"id":26,"lat":4.645,"lng":-74.105,"clients":23},{"id":27,"lat":4.695,"lng":-74.08500000000001,"clients":23},{"id":28,"lat":4.645,"lng":-74.055,"clients":23},{"id":29,"lat":4.655,"lng":-74.11500000000001,"clients":22},{"id":30,"lat":4.685,"lng":-74.045,"clients":22},{"id":31,"lat":4.725,"lng":-74.055,"clients":21},{"id":32,"lat":4.695,"lng":-74.065,"clients":21},{"id":33,"lat":4.715,"lng":-74.075,"clients":21},{"id":34,"lat":4.675,"lng":-74.135,"clients":20},{"id":35,"lat":4.645,"lng":-74.125,"clients":20},{"id":36,"lat":4.675,"lng":-74.045,"clients":20},{"id":37,"lat":4.645,"lng":-74.08500000000001,"clients":20},{"id":38,"lat":4.705,"lng":-74.045,"clients":19},{"id":39,"lat":4.635,"lng":-74.065,"clients":19},{"id":40,"lat":4.705,"lng":-74.025,"clients":19},{"id":41,"lat":4.585,"lng":-74.155,"clients":19},{"id":42,"lat":4.735,"lng":-74.03500000000001,"clients":18},{"id":43,"lat":4.685,"lng":-74.065,"clients":18},{"id":44,"lat":4.685,"lng":-74.155,"clients":18},{"id":45,"lat":4.745,"lng":-74.03500000000001,"clients":18},{"id":46,"lat":4.6049999999999995,"lng":-74.08500000000001,"clients":17},{"id":47,"lat":4.655,"lng":-74.075,"clients":17},{"id":48,"lat":4.625,"lng":-74.125,"clients":17},{"id":49,"lat":4.705,"lng":-74.125,"clients":17},{"id":50,"lat":4.725,"lng":-74.135,"clients":17},{"id":51,"lat":4.625,"lng":-74.135,"clients":17},{"id":52,"lat":4.645,"lng":-74.135,"clients":16},{"id":53,"lat":4.675,"lng":-74.105,"clients":16},{"id":54,"lat":4.755,"lng":-74.025,"clients":16},{"id":55,"lat":4.665,"lng":-74.125,"clients":16},{"id":56,"lat":4.625,"lng":-74.08500000000001,"clients":16},{"id":57,"lat":4.745,"lng":-74.025,"clients":16},{"id":58,"lat":4.635,"lng":-74.155,"clients":15},{"id":59,"lat":4.665,"lng":-74.055,"clients":15},{"id":60,"lat":4.655,"lng":-74.055,"clients":15},{"id":61,"lat":4.745,"lng":-74.08500000000001,"clients":15},{"id":62,"lat":4.6049999999999995,"lng":-74.075,"clients":15},{"id":63,"lat":4.615,"lng":-74.075,"clients":15},{"id":64,"lat":4.715,"lng":-74.105,"clients":14},{"id":65,"lat":4.675,"lng":-74.125,"clients":14},{"id":66,"lat":4.655,"lng":-74.135,"clients":14},{"id":67,"lat":4.695,"lng":-74.03500000000001,"clients":14},{"id":68,"lat":4.665,"lng":-74.08500000000001,"clients":14},{"id":69,"lat":4.585,"lng":-74.08500000000001,"clients":14},{"id":70,"lat":4.615,"lng":-74.165,"clients":14},{"id":71,"lat":4.585,"lng":-74.105,"clients":14},{"id":72,"lat":4.635,"lng":-74.075,"clients":13},{"id":73,"lat":4.615,"lng":-74.08500000000001,"clients":13},{"id":74,"lat":4.595,"lng":-74.095,"clients":13},{"id":75,"lat":4.6049999999999995,"lng":-74.14500000000001,"clients":13},{"id":76,"lat":4.675,"lng":-74.14500000000001,"clients":13},{"id":77,"lat":4.765,"lng":-74.03500000000001,"clients":13},{"id":78,"lat":4.755,"lng":-74.045,"clients":13},{"id":79,"lat":4.755,"lng":-74.105,"clients":13},{"id":80,"lat":4.595,"lng":-74.075,"clients":13},{"id":81,"lat":4.725,"lng":-74.11500000000001,"clients":13},{"id":82,"lat":4.595,"lng":-74.165,"clients":13},{"id":83,"lat":4.715,"lng":-74.125,"clients":13},{"id":84,"lat":4.765,"lng":-74.045,"clients":13},{"id":85,"lat":4.755,"lng":-74.03500000000001,"clients":13},{"id":86,"lat":4.705,"lng":-74.11500000000001,"clients":13},{"id":87,"lat":4.6049999999999995,"lng":-74.11500000000001,"clients":13},{"id":88,"lat":4.595,"lng":-74.11500000000001,"clients":12},{"id":89,"lat":4.635,"lng":-74.095,"clients":12},{"id":90,"lat":4.615,"lng":-74.155,"clients":12},{"id":91,"lat":4.715,"lng":-74.065,"clients":12},{"id":92,"lat":4.735,"lng":-74.095,"clients":12},{"id":93,"lat":4.615,"lng":-74.105,"clients":12},{"id":94,"lat":4.635,"lng":-74.125,"clients":12},{"id":95,"lat":4.695,"lng":-74.105,"clients":12},{"id":96,"lat":4.585,"lng":-74.095,"clients":12},{"id":97,"lat":4.655,"lng":-74.105,"clients":12},{"id":98,"lat":4.735,"lng":-74.105,"clients":12},{"id":99,"lat":4.595,"lng":-74.125,"clients":11},{"id":100,"lat":4.5649999999999995,"lng":-74.14500000000001,"clients":11},{"id":101,"lat":4.665,"lng":-74.045,"clients":11},{"id":102,"lat":4.6049999999999995,"lng":-74.105,"clients":11},{"id":103,"lat":4.635,"lng":-74.165,"clients":11},{"id":104,"lat":4.615,"lng":-74.11500000000001,"clients":11},{"id":105,"lat":4.625,"lng":-74.185,"clients":11},{"id":106,"lat":4.595,"lng":-74.155,"clients":10},{"id":107,"lat":4.755,"lng":-74.08500000000001,"clients":10},{"id":108,"lat":4.635,"lng":-74.185,"clients":10},{"id":109,"lat":4.635,"lng":-74.14500000000001,"clients":10},{"id":110,"lat":4.735,"lng":-74.025,"clients":10},{"id":111,"lat":4.725,"lng":-74.025,"clients":10},{"id":112,"lat":4.645,"lng":-74.065,"clients":10},{"id":113,"lat":4.675,"lng":-74.155,"clients":10},{"id":114,"lat":4.745,"lng":-74.045,"clients":10},{"id":115,"lat":4.6049999999999995,"lng":-74.125,"clients":10},{"id":116,"lat":4.685,"lng":-74.03500000000001,"clients":10},{"id":117,"lat":4.6049999999999995,"lng":-74.19500000000001,"clients":10},{"id":118,"lat":4.655,"lng":-74.065,"clients":10},{"id":119,"lat":4.745,"lng":-74.095,"clients":10},{"id":120,"lat":4.745,"lng":-74.105,"clients":10},{"id":121,"lat":4.615,"lng":-74.19500000000001,"clients":9},{"id":122,"lat":4.705,"lng":-74.105,"clients":9},{"id":123,"lat":4.735,"lng":-74.08500000000001,"clients":9},{"id":124,"lat":4.635,"lng":-74.19500000000001,"clients":9},{"id":125,"lat":4.665,"lng":-74.075,"clients":9},{"id":126,"lat":4.645,"lng":-74.11500000000001,"clients":9},{"id":127,"lat":4.595,"lng":-74.105,"clients":9},{"id":128,"lat":4.625,"lng":-74.165,"clients":9},{"id":129,"lat":4.685,"lng":-74.105,"clients":9},{"id":130,"lat":4.625,"lng":-74.17500000000001,"clients":9},{"id":131,"lat":4.645,"lng":-74.165,"clients":9},{"id":132,"lat":4.695,"lng":-74.095,"clients":9},{"id":133,"lat":4.705,"lng":-74.135,"clients":9},{"id":134,"lat":4.615,"lng":-74.135,"clients":9},{"id":135,"lat":4.665,"lng":-74.065,"clients":9},{"id":136,"lat":4.585,"lng":-74.11500000000001,"clients":9},{"id":137,"lat":4.685,"lng":-74.095,"clients":9},{"id":138,"lat":4.615,"lng":-74.14500000000001,"clients":9},{"id":139,"lat":4.725,"lng":-74.095,"clients":9},{"id":140,"lat":4.675,"lng":-74.075,"clients":9},{"id":141,"lat":4.725,"lng":-74.075,"clients":9},{"id":142,"lat":4.585,"lng":-74.125,"clients":8},{"id":143,"lat":4.585,"lng":-74.165,"clients":8},{"id":144,"lat":4.615,"lng":-74.17500000000001,"clients":8},{"id":145,"lat":4.6049999999999995,"lng":-74.095,"clients":8},{"id":146,"lat":4.615,"lng":-74.125,"clients":8},{"id":147,"lat":4.615,"lng":-74.065,"clients":8},{"id":148,"lat":4.6049999999999995,"lng":-74.135,"clients":8},{"id":149,"lat":4.695,"lng":-74.075,"clients":8},{"id":150,"lat":4.6049999999999995,"lng":-74.185,"clients":8},{"id":151,"lat":4.655,"lng":-74.155,"clients":8},{"id":152,"lat":4.625,"lng":-74.075,"clients":8},{"id":153,"lat":4.685,"lng":-74.075,"clients":8},{"id":154,"lat":4.675,"lng":-74.095,"clients":8},{"id":155,"lat":4.575,"lng":-74.105,"clients":7},{"id":156,"lat":4.595,"lng":-74.08500000000001,"clients":7},{"id":157,"lat":4.575,"lng":-74.095,"clients":7},{"id":158,"lat":4.675,"lng":-74.11500000000001,"clients":7},{"id":159,"lat":4.755,"lng":-74.11500000000001,"clients":7},{"id":160,"lat":4.635,"lng":-74.135,"clients":7},{"id":161,"lat":4.665,"lng":-74.14500000000001,"clients":7},{"id":162,"lat":4.625,"lng":-74.14500000000001,"clients":7},{"id":163,"lat":4.625,"lng":-74.155,"clients":7},{"id":164,"lat":4.735,"lng":-74.045,"clients":7},{"id":165,"lat":4.6049999999999995,"lng":-74.065,"clients":7},{"id":166,"lat":4.655,"lng":-74.165,"clients":7},{"id":167,"lat":4.555,"lng":-74.11500000000001,"clients":7},{"id":168,"lat":4.695,"lng":-74.11500000000001,"clients":7},{"id":169,"lat":4.685,"lng":-74.08500000000001,"clients":7},{"id":170,"lat":4.595,"lng":-74.135,"clients":7},{"id":171,"lat":4.585,"lng":-74.14500000000001,"clients":7},{"id":172,"lat":4.655,"lng":-74.14500000000001,"clients":7},{"id":173,"lat":4.625,"lng":-74.11500000000001,"clients":7},{"id":174,"lat":4.635,"lng":-74.205,"clients":6},{"id":175,"lat":4.5649999999999995,"lng":-74.08500000000001,"clients":6},{"id":176,"lat":4.685,"lng":-74.11500000000001,"clients":6},{"id":177,"lat":4.5649999999999995,"lng":-74.105,"clients":6},{"id":178,"lat":4.715,"lng":-74.135,"clients":6},{"id":179,"lat":4.575,"lng":-74.08500000000001,"clients":6},{"id":180,"lat":4.645,"lng":-74.17500000000001,"clients":6},{"id":181,"lat":4.745,"lng":-74.11500000000001,"clients":6},{"id":182,"lat":4.715,"lng":-74.095,"clients":6},{"id":183,"lat":4.685,"lng":-74.135,"clients":6},{"id":184,"lat":4.625,"lng":-74.205,"clients":6},{"id":185,"lat":4.575,"lng":-74.125,"clients":6},{"id":186,"lat":4.595,"lng":-74.14500000000001,"clients":6},{"id":187,"lat":4.575,"lng":-74.135,"clients":6},{"id":188,"lat":4.635,"lng":-74.17500000000001,"clients":6},{"id":189,"lat":4.7749999999999995,"lng":-74.045,"clients":6},{"id":190,"lat":4.495,"lng":-74.11500000000001,"clients":6},{"id":191,"lat":4.6049999999999995,"lng":-74.165,"clients":6},{"id":192,"lat":4.575,"lng":-74.165,"clients":6},{"id":193,"lat":4.595,"lng":-74.17500000000001,"clients":6},{"id":194,"lat":4.715,"lng":-74.025,"clients":6},{"id":195,"lat":4.6049999999999995,"lng":-74.155,"clients":6},{"id":196,"lat":4.515,"lng":-74.11500000000001,"clients":5},{"id":197,"lat":4.715,"lng":-74.11500000000001,"clients":5},{"id":198,"lat":4.655,"lng":-74.045,"clients":5},{"id":199,"lat":4.5649999999999995,"lng":-74.11500000000001,"clients":5},{"id":200,"lat":4.685,"lng":-74.14500000000001,"clients":5},{"id":201,"lat":4.705,"lng":-74.075,"clients":5},{"id":202,"lat":4.705,"lng":-74.08500000000001,"clients":5},{"id":203,"lat":4.545,"lng":-74.105,"clients":5},{"id":204,"lat":4.625,"lng":-74.065,"clients":5},{"id":205,"lat":4.545,"lng":-74.08500000000001,"clients":5},{"id":206,"lat":4.705,"lng":-74.095,"clients":5},{"id":207,"lat":4.535,"lng":-74.08500000000001,"clients":5},{"id":208,"lat":4.5649999999999995,"lng":-74.095,"clients":5},{"id":209,"lat":4.695,"lng":-74.165,"clients":5},{"id":210,"lat":4.545,"lng":-74.11500000000001,"clients":5},{"id":211,"lat":4.585,"lng":-74.135,"clients":5},{"id":212,"lat":4.505,"lng":-74.11500000000001,"clients":5},{"id":213,"lat":4.625,"lng":-74.19500000000001,"clients":5},{"id":214,"lat":4.665,"lng":-74.155,"clients":5}];
     const maxClients = Math.max(...cells.map((cell) => cell.clients));
     const map = L.map('map', { preferCanvas: true }).setView([4.66, -74.09], 11);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -68,16 +156,54 @@
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    L.heatLayer(cells.map((cell) => [cell.lat, cell.lng, cell.clients / maxClients]), {
+    const clusterLayer = L.markerClusterGroup({
+      chunkedLoading: true,
+      showCoverageOnHover: false,
+      maxClusterRadius: 44,
+      disableClusteringAtZoom: 16
+    });
+
+    const icon = L.divIcon({
+      className: 'customer-zone-dot',
+      html: '<span style="display:block;width:12px;height:12px;border-radius:50%;background:#1b8f76;border:2px solid white;box-shadow:0 1px 5px rgba(0,0,0,.3)"></span>',
+      iconSize: [12, 12],
+      iconAnchor: [6, 6]
+    });
+
+    for (const cell of cells) {
+      const popup = '<div class="popup"><b>Zona #' + cell.id + '</b>' +
+        '<br>Clientes: <b>' + cell.clients.toLocaleString('es-CO') + '</b>' +
+        '<br><span style="color:#637083">Celda aproximada de 1km</span></div>';
+      L.marker([cell.lat, cell.lng], { icon }).bindPopup(popup).addTo(clusterLayer);
+    }
+
+    const heatLayer = L.heatLayer(cells.map((cell) => [cell.lat, cell.lng, cell.clients / maxClients]), {
       radius: 34,
       blur: 26,
       maxZoom: 14,
       minOpacity: 0.22,
       gradient: { 0.18: '#2b8cbe', 0.45: '#41ab5d', 0.72: '#fec44f', 1.0: '#d95f0e' }
-    }).addTo(map);
+    });
+
+    clusterLayer.addTo(map);
+    heatLayer.addTo(map);
 
     const bounds = L.latLngBounds(cells.map((cell) => [cell.lat, cell.lng]));
     if (cells.length) map.fitBounds(bounds.pad(0.1));
+
+    document.getElementById('toggleClusters').addEventListener('click', (event) => {
+      const active = map.hasLayer(clusterLayer);
+      active ? map.removeLayer(clusterLayer) : clusterLayer.addTo(map);
+      event.currentTarget.classList.toggle('active', !active);
+    });
+    document.getElementById('toggleHeat').addEventListener('click', (event) => {
+      const active = map.hasLayer(heatLayer);
+      active ? map.removeLayer(heatLayer) : heatLayer.addTo(map);
+      event.currentTarget.classList.toggle('active', !active);
+    });
+    document.getElementById('fitBounds').addEventListener('click', () => {
+      if (cells.length) map.fitBounds(bounds.pad(0.1));
+    });
   </script>
 </body>
 </html>
